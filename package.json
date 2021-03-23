@@ -11,6 +11,9 @@
     "type": "git",
     "url": "git+https://github.com/xiaobebe/vite-plugin-cdn-externals.git"
   },
+  "files": [
+    "lib"
+  ],
   "author": "yee.wang",
   "license": "ISC",
   "bugs": {
