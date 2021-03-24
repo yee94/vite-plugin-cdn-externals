@@ -5,6 +5,7 @@
     "module": "esnext",
     "lib": ["esnext", "es5", "dom"],
     "sourceMap": false,
+    "moduleResolution": "Node",
     "allowJs": true,
     "jsx": "react",
     "removeComments": false,
