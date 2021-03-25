@@ -26,24 +26,36 @@ const optimizeCacheDir = path.join(
   `node_modules/.vite-plugin-externals`
 );
 
-const cdnExternals = (externals: Record<string, string>) => {
+const cdnExternals = (
+  externals: Record<
+    string,
+    string | { windowName: string; find: string | RegExp }
+  >
+) => {
   mkdirp(optimizeCacheDir);
 
-  const alias = Object.entries(externals).reduce(
-    (prev, [npmName, windowName]) => {
-      const code = getExternalCode(npmName, <string>windowName);
+  const alias = Object.entries(externals).map(([npmName, option]) => {
+    let windowName = option;
+    let find = npmName;
+    if (typeof option === "object") {
+      windowName = option.windowName;
+      find = <string>option.find;
+    }
 
-      const hash = getAssetHash(code);
-      const fileName = `${npmName.replace("/", "_")}.${hash}.js`;
-      const dependencyFile = path.resolve(optimizeCacheDir, fileName);
-      if (!fs.existsSync(dependencyFile)) {
-        fs.writeFileSync(dependencyFile, code);
-      }
+    const code = getExternalCode(npmName, <string>windowName);
 
-      return Object.assign(prev, { [npmName]: dependencyFile });
-    },
-    {}
-  );
+    const hash = getAssetHash(code);
+    const fileName = `${npmName.replace("/", "_")}.${hash}.js`;
+    const dependencyFile = path.resolve(optimizeCacheDir, fileName);
+    if (!fs.existsSync(dependencyFile)) {
+      fs.writeFileSync(dependencyFile, code);
+    }
+
+    return {
+      find,
+      replacement: dependencyFile,
+    };
+  });
 
   return {
     name: "vite:cdn-externals",
