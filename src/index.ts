@@ -11,7 +11,7 @@ function getExternalCode(npmName: string, windowName: string) {
       npmName
     ));
     const eachExport = Object.keys(exports)
-      .filter((key) => /^[\w|_]+$/.test(key))
+      .filter((key) => /^[\w|_]+$/.test(key) && key !== "__esModule")
       .map((key) => `export const ${key} = modules["${key}"];`);
 
     return `var modules = window["${windowName}"];
