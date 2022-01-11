@@ -4,17 +4,25 @@ import * as fs from "fs";
 import { createHash } from "crypto";
 
 function getExternalCode(npmName: string, windowName: string) {
-  const exports = require(path.resolve(process.cwd(), "node_modules", npmName));
-  const eachExport = Object.keys(exports)
-    .filter((key) => /^[\w|_]+$/.test(key))
-    .map((key) => `export const ${key} = modules["${key}"];`);
+  try {
+    const exports = require(path.resolve(
+      process.cwd(),
+      "node_modules",
+      npmName
+    ));
+    const eachExport = Object.keys(exports)
+      .filter((key) => /^[\w|_]+$/.test(key))
+      .map((key) => `export const ${key} = modules["${key}"];`);
 
-  return `var modules = window["${windowName}"];
+    return `var modules = window["${windowName}"];
         
         ${eachExport.join("\n")}
           
         export default modules;
         `;
+  } catch (e) {
+    console.warn("Could not load external code for " + npmName);
+  }
 }
 
 export function getAssetHash(content: Buffer | string) {
@@ -34,28 +42,33 @@ const cdnExternals = (
 ) => {
   mkdirp(optimizeCacheDir);
 
-  const alias = Object.entries(externals).map(([npmName, option]) => {
-    let windowName = option;
-    let find = npmName;
-    if (typeof option === "object") {
-      windowName = option.windowName;
-      find = <string>option.find;
-    }
+  const alias = Object.entries(externals)
+    .map(([npmName, option]) => {
+      let windowName = option;
+      let find = npmName;
+      if (typeof option === "object") {
+        windowName = option.windowName;
+        find = <string>option.find;
+      }
 
-    const code = getExternalCode(npmName, <string>windowName);
+      const code = getExternalCode(npmName, <string>windowName);
+      if (!code) {
+        return null;
+      }
 
-    const hash = getAssetHash(code);
-    const fileName = `${npmName.replace("/", "_")}.${hash}.js`;
-    const dependencyFile = path.resolve(optimizeCacheDir, fileName);
-    if (!fs.existsSync(dependencyFile)) {
-      fs.writeFileSync(dependencyFile, code);
-    }
+      const hash = getAssetHash(code);
+      const fileName = `${npmName.replace("/", "_")}.${hash}.js`;
+      const dependencyFile = path.resolve(optimizeCacheDir, fileName);
+      if (!fs.existsSync(dependencyFile)) {
+        fs.writeFileSync(dependencyFile, code);
+      }
 
-    return {
-      find,
-      replacement: dependencyFile,
-    };
-  });
+      return {
+        find,
+        replacement: dependencyFile,
+      };
+    })
+    .filter(Boolean);
 
   return {
     name: "vite:cdn-externals",
