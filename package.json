@@ -28,8 +28,5 @@
   },
   "dependencies": {
     "mkdirp-sync": "^0.0.3"
-  },
-  "publishConfig": {
-    "registry": "https://registry.antfin-inc.com"
   }
 }
