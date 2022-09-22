@@ -1,25 +1,31 @@
 import * as path from "path";
 import mkdirp from "mkdirp-sync";
+import { getExportsRuntime } from "pkg-exports";
 import * as fs from "fs";
 import { createHash } from "crypto";
 
-function getExternalCode(npmName: string, windowName: string) {
+async function getExternalCode(npmName: string, windowName: string) {
   try {
-    const exports = require(path.resolve(
-      process.cwd(),
-      "node_modules",
-      npmName
-    ));
-    const eachExport = Object.keys(exports)
-      .filter((key) => /^[\w|_]+$/.test(key) && key !== "__esModule")
+    const exports = await getExportsRuntime(npmName);
+
+    const eachExport = exports
+      .filter((key) => {
+        if (!/^[\w|_]+$/.test(key)) {
+          return false;
+        }
+        if (["default", "__esModule"].includes(key)) {
+          return false;
+        }
+
+        return true;
+      })
       .map((key) => `export const ${key} = modules["${key}"];`);
 
     return `var modules = window["${windowName}"];
         
         ${eachExport.join("\n")}
-          
-        export default modules;
-        `;
+
+        export default modules;`;
   } catch (e) {
     console.warn("Could not load external code for " + npmName);
   }
@@ -42,38 +48,40 @@ const cdnExternals = (
 ) => {
   mkdirp(optimizeCacheDir);
 
-  const alias = Object.entries(externals)
-    .map(([npmName, option]) => {
-      let windowName = option;
-      let find = npmName;
-      if (typeof option === "object") {
-        windowName = option.windowName;
-        find = <string>option.find;
-      }
-
-      const code = getExternalCode(npmName, <string>windowName);
-      if (!code) {
-        return null;
-      }
-
-      const hash = getAssetHash(code);
-      const fileName = `${npmName.replace("/", "_")}.${hash}.js`;
-      const dependencyFile = path.resolve(optimizeCacheDir, fileName);
-      if (!fs.existsSync(dependencyFile)) {
-        fs.writeFileSync(dependencyFile, code);
-      }
-
-      return {
-        find,
-        replacement: dependencyFile,
-      };
-    })
-    .filter(Boolean);
-
   return {
     name: "vite:cdn-externals",
     enforce: "pre",
-    config() {
+    async config() {
+      const alias = await Promise.all(
+        Object.entries(externals)
+          .map(async ([npmName, option]) => {
+            let windowName = option;
+            let find = npmName;
+            if (typeof option === "object") {
+              windowName = option.windowName;
+              find = <string>option.find;
+            }
+
+            const code = await getExternalCode(npmName, <string>windowName);
+            if (!code) {
+              return null;
+            }
+
+            const hash = getAssetHash(code);
+            const fileName = `${npmName.replace("/", "_")}.${hash}.js`;
+            const dependencyFile = path.resolve(optimizeCacheDir, fileName);
+            if (!fs.existsSync(dependencyFile)) {
+              fs.writeFileSync(dependencyFile, code);
+            }
+
+            return {
+              find,
+              replacement: dependencyFile,
+            };
+          })
+          .filter(Boolean)
+      );
+
       return {
         resolve: {
           alias,

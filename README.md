@@ -1,6 +1,6 @@
 # vite-plugin-cdn-externals
 
-use to external cdn resources eg.React, Vue
+Use to external cdn resources eg.React, Vue
 
 ## Usage
 

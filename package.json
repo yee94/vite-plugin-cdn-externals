@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-cdn-externals",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "scripts": {
@@ -28,6 +28,7 @@
     "vitest": "^0.22.1"
   },
   "dependencies": {
-    "mkdirp-sync": "^0.0.3"
+    "mkdirp-sync": "^0.0.3",
+    "pkg-exports": "^0.1.2"
   }
 }
