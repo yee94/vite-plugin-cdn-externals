@@ -52,32 +52,34 @@ const cdnExternals = (
     name: "vite:cdn-externals",
     enforce: "pre",
     async config() {
-      const alias = await Promise.all(
-        Object.entries(externals).map(async ([npmName, option]) => {
-          let windowName = option;
-          let find = npmName;
-          if (typeof option === "object") {
-            windowName = option.windowName;
-            find = <string>option.find;
-          }
+      const alias = (
+        await Promise.all(
+          Object.entries(externals).map(async ([npmName, option]) => {
+            let windowName = option;
+            let find = npmName;
+            if (typeof option === "object") {
+              windowName = option.windowName;
+              find = <string>option.find;
+            }
 
-          const code = await getExternalCode(npmName, <string>windowName);
-          if (!code) {
-            return null;
-          }
+            const code = await getExternalCode(npmName, <string>windowName);
+            if (!code) {
+              return null;
+            }
 
-          const hash = getAssetHash(code);
-          const fileName = `${npmName.replace("/", "_")}.${hash}.js`;
-          const dependencyFile = path.resolve(optimizeCacheDir, fileName);
-          if (!fs.existsSync(dependencyFile)) {
-            fs.writeFileSync(dependencyFile, code);
-          }
+            const hash = getAssetHash(code);
+            const fileName = `${npmName.replace("/", "_")}.${hash}.js`;
+            const dependencyFile = path.resolve(optimizeCacheDir, fileName);
+            if (!fs.existsSync(dependencyFile)) {
+              fs.writeFileSync(dependencyFile, code);
+            }
 
-          return {
-            find,
-            replacement: dependencyFile,
-          };
-        })
+            return {
+              find,
+              replacement: dependencyFile,
+            };
+          })
+        )
       ).filter(Boolean);
 
       return {
