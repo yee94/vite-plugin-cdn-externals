@@ -3,6 +3,7 @@ import mkdirp from "mkdirp-sync";
 import { getExportsRuntime } from "pkg-exports";
 import * as fs from "fs";
 import { createHash } from "crypto";
+import type { Plugin } from "vite";
 
 async function getExternalCode(npmName: string, windowName: string) {
   try {
@@ -83,11 +84,14 @@ const cdnExternals = (
       ).filter(Boolean);
 
       return {
+        optimizeDeps: {
+          include: Object.keys(externals),
+        },
         resolve: {
           alias,
         },
       };
     },
-  };
+  } as Plugin;
 };
 export default cdnExternals;
