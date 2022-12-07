@@ -84,9 +84,6 @@ const cdnExternals = (
       ).filter(Boolean);
 
       return {
-        optimizeDeps: {
-          include: Object.keys(externals),
-        },
         resolve: {
           alias,
         },
