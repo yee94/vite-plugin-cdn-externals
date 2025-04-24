@@ -34,5 +34,8 @@
   "dependencies": {
     "mkdirp-sync": "^0.0.3",
     "pkg-exports": "^0.1.2"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   }
 }
